@@ -1,0 +1,3 @@
+source: docs
+include: ["assets"]
+keep_files: ["assets"]
