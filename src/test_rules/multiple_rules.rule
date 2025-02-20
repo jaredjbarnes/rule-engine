@@ -20,3 +20,11 @@ RULE sale {
         discount = 0.2
 
 }
+
+RULE ben {
+
+    WHEN
+        person.firstName == "John"
+    THEN
+        person.age = person.age + 10
+}

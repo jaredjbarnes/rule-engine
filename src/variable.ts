@@ -1,4 +1,4 @@
-export class Operand {
+export class Variable {
     private _type: "string" | "number" | "boolean" | "null" | "date" | "array" | "object" | "undefined";
     private _context: any;
     private _accessor: string | null;
@@ -53,13 +53,13 @@ export class Operand {
     accessProperty(accessor: string) {
         if (this._type === "object") {
             if (this.value[accessor] != null) {
-                return new Operand(this.value, accessor);
+                return new Variable(this.value, accessor);
             } else {
                 throw new Error(`Cannot find property with name: ${accessor}.`);
             }
         } else if (this._type === "array") {
             if (this.value[accessor] != null) {
-                return new Operand(this.value, accessor);
+                return new Variable(this.value, accessor);
             } else {
                 throw new Error(`Cannot find value at index: ${accessor}.`);
             }
@@ -72,125 +72,125 @@ export class Operand {
         return this.accessProperty(String(index));
     }
 
-    "="(operand: Operand) {
+    "="(operand: Variable) {
         if (this._accessor != null) {
             this._context[this._accessor] = operand.value;
         }
     }
 
-    "+"(operand: Operand) {
+    "+"(operand: Variable) {
         if (this._type === "string" && (operand.type === "number" || operand.type === "string")) {
-            return new Operand(this.value + operand.value, null);
+            return new Variable(this.value + operand.value, null);
         } else if (this._type === "number" && operand.type === "number") {
-            return new Operand(this.value + operand.value, null);
+            return new Variable(this.value + operand.value, null);
         } else {
             throw new Error(`Cannot add type ${this._type} with type ${operand.type}.`);
         }
     }
 
-    "-"(operand: Operand) {
+    "-"(operand: Variable) {
         if (this._type === "number" && operand.type === "number") {
-            return new Operand(this.value - operand.value, null);
+            return new Variable(this.value - operand.value, null);
         } else {
             throw new Error(`Cannot add type ${this._type} with type ${operand.type}.`);
         }
     }
 
-    "*"(operand: Operand) {
+    "*"(operand: Variable) {
         if (this._type === "number" && operand.type === "number") {
-            return new Operand(this.value * operand.value, null);
+            return new Variable(this.value * operand.value, null);
         } else {
             throw new Error(`Cannot add type ${this._type} with type ${operand.type}.`);
         }
     }
 
-    "/"(operand: Operand) {
+    "/"(operand: Variable) {
         if (this._type === "number" && operand.type === "number") {
-            return new Operand(this.value / operand.value, null);
+            return new Variable(this.value / operand.value, null);
         } else {
             throw new Error(`Cannot add type ${this._type} with type ${operand.type}.`);
         }
     }
 
-    "%"(operand: Operand) {
+    "%"(operand: Variable) {
         if (this._type === "number" && operand.type === "number") {
-            return new Operand(this.value % operand.value, null);
+            return new Variable(this.value % operand.value, null);
         } else {
             throw new Error(`Cannot add type ${this._type} with type ${operand.type}.`);
         }
     }
 
-    "=="(operand: Operand) {
+    "=="(operand: Variable) {
         if (this._type === "date" || operand.type === "date") {
-            return new Operand(this.value.getTime() === operand.value.getTime(), null);
+            return new Variable(this.value.getTime() === operand.value.getTime(), null);
         } else if (this._type === operand.type) {
-            return new Operand(this.value === operand.value, null);
+            return new Variable(this.value === operand.value, null);
         } else {
             throw new Error(`Cannot compare different types.`);
         }
     }
 
-    "!="(operand: Operand) {
+    "!="(operand: Variable) {
         if (this._type === "date" || operand.type === "date") {
-            return new Operand(this.value.getTime() === operand.value.getTime(), null);
+            return new Variable(this.value.getTime() === operand.value.getTime(), null);
         } else if (this._type !== operand.type) {
-            return new Operand(this.value !== operand.value, null);
+            return new Variable(this.value !== operand.value, null);
         } else {
             throw new Error(`Cannot compare different types.`);
         }
     }
 
-    ">="(operand: Operand) {
+    ">="(operand: Variable) {
         if (this._type === "date" || operand.type === "date") {
-            return new Operand(this.value.getTime() >= operand.value.getTime(), null);
+            return new Variable(this.value.getTime() >= operand.value.getTime(), null);
         } else if (this._type === operand.type && this._type === "number") {
-            return new Operand(this.value >= operand.value, null);
+            return new Variable(this.value >= operand.value, null);
         } else {
             throw new Error(`Cannot compare if operand is greater than or equal to on non numeric values.`);
         }
     }
 
-    ">"(operand: Operand) {
+    ">"(operand: Variable) {
         if (this._type === "date" || operand.type === "date") {
-            return new Operand(this.value.getTime() > operand.value.getTime(), null);
+            return new Variable(this.value.getTime() > operand.value.getTime(), null);
         } else if (this._type === operand.type && this._type === "number") {
-            return new Operand(this.value > operand.value, null);
+            return new Variable(this.value > operand.value, null);
         } else {
             throw new Error(`Cannot compare if operand is greater than to on non numeric values.`);
         }
     }
 
-    "<="(operand: Operand) {
+    "<="(operand: Variable) {
         if (this._type === "date" || operand.type === "date") {
-            return new Operand(this.value.getTime() <= operand.value.getTime(), null);
+            return new Variable(this.value.getTime() <= operand.value.getTime(), null);
         } else if (this._type === operand.type && this._type === "number") {
-            return new Operand(this.value <= operand.value, null);
+            return new Variable(this.value <= operand.value, null);
         } else {
             throw new Error(`Cannot compare if operand is less than or equal to on non numeric values.`);
         }
     }
 
-    "<"(operand: Operand) {
+    "<"(operand: Variable) {
         if (this._type === "date" || operand.type === "date") {
-            return new Operand(this.value.getTime() < operand.value.getTime(), null);
+            return new Variable(this.value.getTime() < operand.value.getTime(), null);
         } else if (this._type === operand.type && this._type === "number") {
-            return new Operand(this.value < operand.value, null);
+            return new Variable(this.value < operand.value, null);
         } else {
             throw new Error(`Cannot compare if operand is less than on non numeric values.`);
         }
     }
 
-    "&&"(operand: Operand) {
+    "&&"(operand: Variable) {
         if (this._type === "boolean" && operand.type === "boolean") {
-            return new Operand(this.value && operand.value, null);
+            return new Variable(this.value && operand.value, null);
         } else {
             throw new Error(`Can only logically reduce boolean values.`);
         }
     }
 
-    "||"(operand: Operand) {
+    "||"(operand: Variable) {
         if (this._type === "boolean" && operand.type === "boolean") {
-            return new Operand(this.value || operand.value, null);
+            return new Variable(this.value || operand.value, null);
         } else {
             throw new Error(`Can only logically reduce boolean values.`);
         }
@@ -198,7 +198,7 @@ export class Operand {
 
     "!"() {
         if (this._type === "boolean") {
-            return new Operand(!this.value, null);
+            return new Variable(!this.value, null);
         } else {
             throw new Error(`Can only negate boolean values.`);
         }

@@ -1,5 +1,5 @@
 import { Node, Pattern } from "clarity-pattern-parser";
-import { Operand } from "./operand.ts";
+import { Variable } from "./variable.ts";
 
 export const infixOperationNodeNames = {
     "assignment-expression": true,
@@ -83,77 +83,77 @@ export class RulesEngine {
             return true;
         }
 
-        const result = this._walkUp(whenBody, (n: Node, operands: Operand[]) => {
-            return this._processNode(n, operands);
+        const result = this._walkUp(whenBody, (n: Node, variables: Variable[]) => {
+            return this._processNode(n, variables);
         });
 
 
         return result == null ? false : result.value;
     }
 
-    private _processNode(n: Node, operands: Operand[]): Operand {
+    private _processNode(n: Node, variables: Variable[]): Variable {
         if (n.name === "variable-reference") {
-            return new Operand(this.dataContext, n.value);
+            return new Variable(this.dataContext, n.value);
         } else if (n.name === "now-literal") {
-            return new Operand(new Date(), null);
+            return new Variable(new Date(), null);
         } else if (n.name === "date-literal") {
-            return new Operand(new Date(n.value), null);
+            return new Variable(new Date(n.value), null);
         } else if (n.name.includes("literal")) {
-            return new Operand(JSON.parse(n.value), null);
+            return new Variable(JSON.parse(n.value), null);
         } else if (n.name === "refinement-expression") {
-            const value = operands[1].value;
-            if (operands[0] == null) {
-                throw new Error("Left Operand is null.");
+            const value = variables[1].value;
+            if (variables[0] == null) {
+                throw new Error("Left Variable is null.");
             }
 
-            return operands[0].accessProperty(value);
+            return variables[0].accessProperty(value);
         } else if (n.name === "dot-refinement" || n.name === "bracket-refinement") {
-            return operands[1];
+            return variables[1];
         } else if (n.name === "property") {
-            return new Operand(n.value, null);
+            return new Variable(n.value, null);
         } else if (infixOperationNodeNames[n.name] != null) {
             const operator = n.children[1].value;
-            const leftOperand = operands[0];
-            const rightOperand = operands[2];
+            const leftVariable = variables[0];
+            const rightVariable = variables[2];
 
-            if (leftOperand == null || rightOperand == null) {
-                throw new Error("Left and Right Operands cannot be null.");
+            if (leftVariable == null || rightVariable == null) {
+                throw new Error("Left and Right variables cannot be null.");
             }
 
-            if (leftOperand[operator] == null) {
+            if (leftVariable[operator] == null) {
                 throw new Error(`Unsupported infix operator: ${operator}`);
             }
 
-            return leftOperand[operator](rightOperand);
+            return leftVariable[operator](rightVariable);
 
         } else if (prefixOperationNodeNames[n.name]) {
             const operator = n.children[0].value;
-            const operand = operands[1];
+            const variable = variables[1];
 
-            if (operand == null) {
-                throw new Error("Operand is null.");
+            if (variable == null) {
+                throw new Error("Variable is null.");
             }
 
-            if (operand[operator] == null) {
+            if (variable[operator] == null) {
                 throw new Error(`Unsupported prefix operator: ${operator}`);
             }
 
-            return operand[operator]();
+            return variable[operator]();
         } else if (n.name === "service-invocation") {
             const serviceNameNode = n.find(n => n.name === "service-name");
             const serviceName = String(serviceNameNode?.value);
 
             if (this._services[serviceName] != null) {
-                this._services[serviceName](operands);
+                this._services[serviceName](variables);
             }
 
-            return new Operand(undefined, null);
+            return new Variable(undefined, null);
         } else if (n.name === "group-expression") {
-            return operands[1];
+            return variables[1];
         } else if (n.name === "when-statement") {
-            return operands[1];
+            return variables[1];
         } else {
-            return new Operand(operands[0], null);
+            return new Variable(variables[0], null);
         }
 
 
@@ -168,15 +168,15 @@ export class RulesEngine {
         }
 
         thenBody.children.forEach((expression) => {
-            this._walkUp(expression, (n: Node, operands: Operand[]) => {
-                return this._processNode(n, operands);
+            this._walkUp(expression, (n: Node, variables: Variable[]) => {
+                return this._processNode(n, variables);
             });
         });
 
     }
 
-    private _walkUp(node: Node, callback: (node: Node, operands: Operand[]) => Operand): Operand {
-        const args: Operand[] = [];
+    private _walkUp(node: Node, callback: (node: Node, variables: Variable[]) => Variable): Variable {
+        const args: Variable[] = [];
 
         for (const child of node.children) {
             args.push(this._walkUp(child, callback));
