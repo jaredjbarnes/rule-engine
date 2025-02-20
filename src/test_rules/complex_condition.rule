@@ -2,6 +2,6 @@ RULE updatePerson {
     WHEN (person.firstName == "John" && person.lastName == "Smith") || person.firstName == "Jane"
     THEN 
         person.lastName = "Doe"
-        person.firstName = "Aydri" + "Jared"
+        person.firstName = "Aydri"
         person.age = 10
 }

@@ -3,6 +3,8 @@ salience-keyword = "salience"
 when-keyword = "WHEN"
 then-keyword = "THEN"
 
+now-literal = "now"
+date-literal = /(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])(?:T(0\d|1\d|2[0-3]):([0-5]\d):([0-5]\d)(?:\.(\d+))?(Z|([+-](0\d|1[0-3]):([0-5]\d)))?)?/
 string-literal = /"(?:\\.|[^"\\])*"/
 line-spaces = /[^\S\r\n]+/
 spaces = /\s+/
@@ -23,10 +25,6 @@ assignment-operator = "="
 comparison-operator = "<=" | "<" | ">=" | ">" | "==" | "!="
 comparison-expression = expression + spaces? + comparison-operator + spaces? + expression
 
-# Augment Available namespaces there
-@tokens([
-    ""
-])
 property = name
 dot-refinement = "." + property
 bracket-refinement = "[" +spaces? + expression + spaces? + "]"
@@ -58,7 +56,7 @@ logical-and-expression = logical-expression + spaces? + and-operator + spaces? +
 logical-or-expression = logical-expression + spaces? + or-operator + spaces? + logical-expression
 logical-comparison-expression = logical-expression + spaces? + comparison-operator + spaces? + logical-expression
 
-expression = group-expression | not-expression | plus-expression | minus-expression | service-invocation | refinement-expression |  mul-div-mod-expression | add-sub-expression | comparison-expression | assignment-expression | and-expression | or-expression  | variable-reference | string-literal | number-literal | bool-literal
+expression = group-expression | not-expression | plus-expression | minus-expression | service-invocation | refinement-expression |  mul-div-mod-expression | add-sub-expression | comparison-expression | assignment-expression | and-expression | or-expression | bool-literal | now-literal  | variable-reference | string-literal | date-literal | number-literal 
 logical-expression = logical-comparison-expression | logical-and-expression | logical-or-expression | group-expression | expression
 
 action-name = name

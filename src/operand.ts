@@ -1,5 +1,5 @@
 export class Operand {
-    private _type: "string" | "number" | "boolean" | "null" | "array" | "object" | "undefined";
+    private _type: "string" | "number" | "boolean" | "null" | "date" | "array" | "object" | "undefined";
     private _context: any;
     private _accessor: string | null;
 
@@ -18,7 +18,7 @@ export class Operand {
     constructor(context: any, accessor: string | null) {
         this._accessor = accessor;
         this._context = context;
-        
+
         const value = accessor == null ? context : context[accessor];
 
         if (typeof value === "string") {
@@ -31,6 +31,15 @@ export class Operand {
             this._type = "undefined";
         } else if (value == null) {
             this._type = "null";
+        } else if (context instanceof Date) {
+
+            if (isNaN(context.getTime())) {
+                this._type = "undefined";
+                this._context = undefined;
+            } else {
+                this._type = "date";
+            }
+
         } else if (Array.isArray(value)) {
             this._type = "array";
         } else if (typeof value === "object") {
@@ -112,7 +121,9 @@ export class Operand {
     }
 
     "=="(operand: Operand) {
-        if (this._type === operand.type) {
+        if (this._type === "date" || operand.type === "date") {
+            return new Operand(this.value.getTime() === operand.value.getTime(), null);
+        } else if (this._type === operand.type) {
             return new Operand(this.value === operand.value, null);
         } else {
             throw new Error(`Cannot compare different types.`);
@@ -120,7 +131,9 @@ export class Operand {
     }
 
     "!="(operand: Operand) {
-        if (this._type === operand.type) {
+        if (this._type === "date" || operand.type === "date") {
+            return new Operand(this.value.getTime() === operand.value.getTime(), null);
+        } else if (this._type !== operand.type) {
             return new Operand(this.value !== operand.value, null);
         } else {
             throw new Error(`Cannot compare different types.`);
@@ -128,7 +141,9 @@ export class Operand {
     }
 
     ">="(operand: Operand) {
-        if (this._type === operand.type && this._type === "number") {
+        if (this._type === "date" || operand.type === "date") {
+            return new Operand(this.value.getTime() >= operand.value.getTime(), null);
+        } else if (this._type === operand.type && this._type === "number") {
             return new Operand(this.value >= operand.value, null);
         } else {
             throw new Error(`Cannot compare if operand is greater than or equal to on non numeric values.`);
@@ -136,7 +151,9 @@ export class Operand {
     }
 
     ">"(operand: Operand) {
-        if (this._type === operand.type && this._type === "number") {
+        if (this._type === "date" || operand.type === "date") {
+            return new Operand(this.value.getTime() > operand.value.getTime(), null);
+        } else if (this._type === operand.type && this._type === "number") {
             return new Operand(this.value > operand.value, null);
         } else {
             throw new Error(`Cannot compare if operand is greater than to on non numeric values.`);
@@ -144,7 +161,9 @@ export class Operand {
     }
 
     "<="(operand: Operand) {
-        if (this._type === operand.type && this._type === "number") {
+        if (this._type === "date" || operand.type === "date") {
+            return new Operand(this.value.getTime() <= operand.value.getTime(), null);
+        } else if (this._type === operand.type && this._type === "number") {
             return new Operand(this.value <= operand.value, null);
         } else {
             throw new Error(`Cannot compare if operand is less than or equal to on non numeric values.`);
@@ -152,7 +171,9 @@ export class Operand {
     }
 
     "<"(operand: Operand) {
-        if (this._type === operand.type && this._type === "number") {
+        if (this._type === "date" || operand.type === "date") {
+            return new Operand(this.value.getTime() < operand.value.getTime(), null);
+        } else if (this._type === operand.type && this._type === "number") {
             return new Operand(this.value < operand.value, null);
         } else {
             throw new Error(`Cannot compare if operand is less than on non numeric values.`);

@@ -1,0 +1,22 @@
+RULE seniorCitizen {
+    WHEN 
+        person.age >= 70
+    THEN 
+        person.isSeniorCitizen = true
+}
+
+RULE height {
+    WHEN 
+        person.height >= 75
+    THEN 
+        person.isTall = true
+}
+
+RULE sale {
+
+    WHEN 
+        now >= 2024-12-01 && now <= 2025-06-01
+    THEN
+        discount = 0.2
+
+}

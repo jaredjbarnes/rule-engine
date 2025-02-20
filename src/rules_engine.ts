@@ -51,7 +51,6 @@ export class RulesEngine {
     execute<T>(rules: string, dataContext: T) {
         const result = this._rulesParser.exec(rules);
 
-
         if (result.ast == null) {
             throw new Error("Invalid Rules");
         }
@@ -60,19 +59,25 @@ export class RulesEngine {
         this._dataContext = dataContext;
         this._cleanAst(this._rulesAst);
 
-        if (this._shouldRun()) {
-            this._processBody();
-        }
+        this.rules.findAll(n => n.name === "rule").forEach((rule) => {
+            this._executeRule(rule);
+        });
 
         return this._dataContext;
+    }
+
+    private _executeRule(rule: Node) {
+        if (this._shouldRun(rule)) {
+            this._processBody(rule);
+        }
     }
 
     private _cleanAst(ast: Node) {
         ast.findAll(n => n.name.includes("space")).forEach(n => n.remove());
     }
 
-    private _shouldRun() {
-        const whenBody = this.rules.find(n => n.name === "when-statement");
+    private _shouldRun(rule: Node) {
+        const whenBody = rule.find(n => n.name === "when-statement");
 
         if (whenBody == null) {
             return true;
@@ -89,6 +94,10 @@ export class RulesEngine {
     private _processNode(n: Node, operands: Operand[]): Operand {
         if (n.name === "variable-reference") {
             return new Operand(this.dataContext, n.value);
+        } else if (n.name === "now-literal") {
+            return new Operand(new Date(), null);
+        } else if (n.name === "date-literal") {
+            return new Operand(new Date(n.value), null);
         } else if (n.name.includes("literal")) {
             return new Operand(JSON.parse(n.value), null);
         } else if (n.name === "refinement-expression") {
@@ -141,7 +150,7 @@ export class RulesEngine {
             return new Operand(undefined, null);
         } else if (n.name === "group-expression") {
             return operands[1];
-        } else if (n.name === "when-statement"){
+        } else if (n.name === "when-statement") {
             return operands[1];
         } else {
             return new Operand(operands[0], null);
@@ -151,8 +160,8 @@ export class RulesEngine {
 
     }
 
-    private _processBody() {
-        const thenBody = this.rules.find(n => n.name === "then-body");
+    private _processBody(rule: Node) {
+        const thenBody = rule.find(n => n.name === "then-body");
 
         if (thenBody == null) {
             return;

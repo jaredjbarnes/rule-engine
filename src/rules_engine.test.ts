@@ -66,4 +66,28 @@ describe("Rules Engine", () => {
         expect(result.person.lastName).toBe("Doe");
         expect(result.person.firstName).toBe("Aydri");
     });
+
+    test("Multiple Rules", async () => {
+        const rules = await readFile(resolvePath("./test_rules/multiple_rules.rule"), "utf-8");
+        const patterns = await Grammar.import("./rules.cpat", {
+            resolveImport: resolveNodeImport
+        });
+
+        const rulesEngine = new RulesEngine(patterns["rules-grammar"], {});
+        const result = rulesEngine.execute(rules, {
+            person: {
+                firstName: "John",
+                lastName: "Smith",
+                age: 71,
+                height: 76,
+                isSeniorCitizen: false,
+                isTall: false
+            },
+            discount: 0
+        });
+
+        expect(result.person.isSeniorCitizen).toBe(true);
+        expect(result.person.isTall).toBe(true);
+        expect(result.discount).toBe(0.2);
+    });
 });
