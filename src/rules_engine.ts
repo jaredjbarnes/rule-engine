@@ -1,7 +1,5 @@
-import { DataContext } from "./data_context.ts";
-import { Node } from "clarity-pattern-parser";
+import { Node, Pattern } from "clarity-pattern-parser";
 import { Operand } from "./operand.ts";
-import { ruleParser as rulesParser } from "./rule_parser.ts";
 
 export const infixOperationNodeNames = {
     "assignment-expression": true,
@@ -21,11 +19,10 @@ export const prefixOperationNodeNames = {
     "minus-expression": true
 };
 
-export class RulesEngine<T> {
+export class RulesEngine {
+    private _rulesParser: Pattern;
     private _rulesAst: Node | null;
     private _dataContext: any | null;
-    private _leftOperand: Operand;
-    private _rightOperand: Operand;
     private _services: Record<string, (arg: any) => void>;
 
     get dataContext() {
@@ -44,27 +41,24 @@ export class RulesEngine<T> {
         return this._rulesAst;
     }
 
-    constructor(services: Record<string, (arg: any) => void>) {
+    constructor(rulesParser: Pattern, services: Record<string, (arg: any) => void> = {}) {
+        this._rulesParser = rulesParser;
         this._rulesAst = null;
         this._dataContext = null;
         this._services = services;
-        this._leftOperand = new Operand(undefined);
-        this._rightOperand = new Operand(undefined);
     }
 
-    execute(rules: string, dataContext: DataContext<T>,) {
-        const result = rulesParser.exec(rules);
+    execute<T>(rules: string, dataContext: T) {
+        const result = this._rulesParser.exec(rules);
 
 
         if (result.ast == null) {
-            throw new Error("Invalid Rule");
+            throw new Error("Invalid Rules");
         }
 
         this._rulesAst = result.ast;
         this._dataContext = dataContext;
         this._cleanAst(this._rulesAst);
-        this._leftOperand = new Operand(undefined);
-        this._rightOperand = new Operand(undefined);
 
         if (this._shouldRun()) {
             this._processBody();
@@ -78,59 +72,83 @@ export class RulesEngine<T> {
     }
 
     private _shouldRun() {
-        this._leftOperand = new Operand(undefined);
-        this._rightOperand = new Operand(undefined);
-
-        const whenBody = this.rules.find(n => n.name === "when-body");
+        const whenBody = this.rules.find(n => n.name === "when-statement");
 
         if (whenBody == null) {
             return true;
         }
 
-        whenBody.walkUp(n => {
-            this._processNode(n);
-            return this._leftOperand.type === "boolean" ? this._leftOperand.value : false;
+        const result = this._walkUp(whenBody, (n: Node, operands: Operand[]) => {
+            return this._processNode(n, operands);
         });
 
-        return false;
+
+        return result == null ? false : result.value;
     }
 
-    private _processNode(n: Node) {
-        if (n.name === "variable-reference" || n.name.includes("literal")) {
-            if (this._leftOperand.type === "undefined") {
-                this._leftOperand = new Operand(this.dataContext[n.value]);
-                this._rightOperand = new Operand(undefined);
-            } else {
-                this._rightOperand = new Operand(this._dataContext[n.value]);
-            }
+    private _processNode(n: Node, operands: Operand[]): Operand {
+        if (n.name === "variable-reference") {
+            return new Operand(this.dataContext, n.value);
+        } else if (n.name.includes("literal")) {
+            return new Operand(JSON.parse(n.value), null);
         } else if (n.name === "refinement-expression") {
-            if (this._rightOperand.type === "undefined") {
-                this._leftOperand.accessProperty(n.value);
-            } else {
-                this._rightOperand.accessProperty(n.value);
+            const value = operands[1].value;
+            if (operands[0] == null) {
+                throw new Error("Left Operand is null.");
             }
-        } else if (infixOperationNodeNames[n.name] != null) {
 
+            return operands[0].accessProperty(value);
+        } else if (n.name === "dot-refinement" || n.name === "bracket-refinement") {
+            return operands[1];
+        } else if (n.name === "property") {
+            return new Operand(n.value, null);
+        } else if (infixOperationNodeNames[n.name] != null) {
             const operator = n.children[1].value;
-            this._leftOperand[operator] && this._leftOperand[operator](this._rightOperand);
+            const leftOperand = operands[0];
+            const rightOperand = operands[2];
+
+            if (leftOperand == null || rightOperand == null) {
+                throw new Error("Left and Right Operands cannot be null.");
+            }
+
+            if (leftOperand[operator] == null) {
+                throw new Error(`Unsupported infix operator: ${operator}`);
+            }
+
+            return leftOperand[operator](rightOperand);
 
         } else if (prefixOperationNodeNames[n.name]) {
             const operator = n.children[0].value;
+            const operand = operands[1];
 
-            if (this._rightOperand.type === "undefined") {
-                this._leftOperand = this._leftOperand[operator] && this._leftOperand[operator]();
-            } else {
-                this._rightOperand = this._rightOperand[operator] && this._rightOperand[operator]();
+            if (operand == null) {
+                throw new Error("Operand is null.");
             }
 
+            if (operand[operator] == null) {
+                throw new Error(`Unsupported prefix operator: ${operator}`);
+            }
+
+            return operand[operator]();
         } else if (n.name === "service-invocation") {
             const serviceNameNode = n.find(n => n.name === "service-name");
             const serviceName = String(serviceNameNode?.value);
 
             if (this._services[serviceName] != null) {
-                this._services[serviceName](this._leftOperand);
+                this._services[serviceName](operands);
             }
+
+            return new Operand(undefined, null);
+        } else if (n.name === "group-expression") {
+            return operands[1];
+        } else if (n.name === "when-statement"){
+            return operands[1];
+        } else {
+            return new Operand(operands[0], null);
         }
+
+
+
     }
 
     private _processBody() {
@@ -141,14 +159,21 @@ export class RulesEngine<T> {
         }
 
         thenBody.children.forEach((expression) => {
-            this._leftOperand = new Operand(undefined);
-            this._rightOperand = new Operand(undefined);
-
-            expression.walkUp(n => {
-                this._processNode(n);
+            this._walkUp(expression, (n: Node, operands: Operand[]) => {
+                return this._processNode(n, operands);
             });
         });
 
+    }
+
+    private _walkUp(node: Node, callback: (node: Node, operands: Operand[]) => Operand): Operand {
+        const args: Operand[] = [];
+
+        for (const child of node.children) {
+            args.push(this._walkUp(child, callback));
+        }
+
+        return callback(node, args);
     }
 
 }

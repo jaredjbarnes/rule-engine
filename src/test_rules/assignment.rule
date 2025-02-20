@@ -1,0 +1,4 @@
+RULE updatePerson {
+    WHEN person.firstName == "John"
+    THEN person.lastName = "Doe"
+}
