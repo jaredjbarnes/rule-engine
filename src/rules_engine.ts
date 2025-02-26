@@ -48,7 +48,7 @@ export class RulesEngine {
         this._services = services;
     }
 
-    execute<T>(rules: string, dataContext: T) {
+    async execute<T>(rules: string, dataContext: T) {
         const result = this._rulesParser.exec(rules);
 
         if (result.ast == null) {
@@ -59,16 +59,20 @@ export class RulesEngine {
         this._dataContext = dataContext;
         this._cleanAst(this._rulesAst);
 
-        this.rules.findAll(n => n.name === "rule").forEach((rule) => {
-            this._executeRule(rule);
-        });
+        const ruleNodes = this.rules.findAll(n => n.name === "rule");
+
+        for (const rule of ruleNodes) {
+            await this._executeRule(rule);
+        }
 
         return this._dataContext;
     }
 
-    private _executeRule(rule: Node) {
-        if (this._shouldRun(rule)) {
-            this._processBody(rule);
+    private async _executeRule(rule: Node) {
+        const shouldRun = await this._shouldRun(rule);
+
+        if (shouldRun) {
+            await this._processBody(rule);
         }
     }
 
@@ -76,22 +80,21 @@ export class RulesEngine {
         ast.findAll(n => n.name.includes("space")).forEach(n => n.remove());
     }
 
-    private _shouldRun(rule: Node) {
+    private async _shouldRun(rule: Node) {
         const whenBody = rule.find(n => n.name === "when-statement");
 
         if (whenBody == null) {
             return true;
         }
 
-        const result = this._walkUp(whenBody, (n: Node, variables: Variable[]) => {
+        const result = await this._walkUp(whenBody, (n: Node, variables: Variable[]) => {
             return this._processNode(n, variables);
         });
-
 
         return result == null ? false : result.value;
     }
 
-    private _processNode(n: Node, variables: Variable[]): Variable {
+    private async _processNode(n: Node, variables: Variable[]): Promise<Variable> {
         if (n.name === "variable-reference") {
             return new Variable(this.dataContext, n.value);
         } else if (n.name === "now-literal") {
@@ -156,30 +159,28 @@ export class RulesEngine {
             return new Variable(variables[0], null);
         }
 
-
-
     }
 
-    private _processBody(rule: Node) {
+    private async _processBody(rule: Node) {
         const thenBody = rule.find(n => n.name === "then-body");
 
         if (thenBody == null) {
             return;
         }
 
-        thenBody.children.forEach((expression) => {
-            this._walkUp(expression, (n: Node, variables: Variable[]) => {
+        for (const expression of thenBody.children) {
+            await this._walkUp(expression, (n: Node, variables: Variable[]) => {
                 return this._processNode(n, variables);
             });
-        });
-
+        }
     }
 
-    private _walkUp(node: Node, callback: (node: Node, variables: Variable[]) => Variable): Variable {
+    private async _walkUp(node: Node, callback: (node: Node, variables: Variable[]) => Promise<Variable>): Promise<Variable> {
         const args: Variable[] = [];
 
         for (const child of node.children) {
-            args.push(this._walkUp(child, callback));
+            const value = await this._walkUp(child, callback);
+            args.push(value);
         }
 
         return callback(node, args);

@@ -20,7 +20,7 @@ describe("Rules Engine", () => {
         });
 
         const rulesEngine = new RulesEngine(patterns["rules-grammar"], {});
-        const result = rulesEngine.execute(rules, {
+        const result = await rulesEngine.execute(rules, {
             person: {
                 firstName: "John",
                 lastName: "Smith"
@@ -37,7 +37,7 @@ describe("Rules Engine", () => {
         });
 
         const rulesEngine = new RulesEngine(patterns["rules-grammar"], {});
-        const result = rulesEngine.execute(rules, {
+        const result = await rulesEngine.execute(rules, {
             person: {
                 firstName: "John",
                 lastName: "Smith"
@@ -55,7 +55,7 @@ describe("Rules Engine", () => {
         });
 
         const rulesEngine = new RulesEngine(patterns["rules-grammar"], {});
-        const result = rulesEngine.execute(rules, {
+        const result = await rulesEngine.execute(rules, {
             person: {
                 firstName: "John",
                 lastName: "Smith",
@@ -74,7 +74,7 @@ describe("Rules Engine", () => {
         });
 
         const rulesEngine = new RulesEngine(patterns["rules-grammar"], {});
-        const result = rulesEngine.execute(rules, {
+        const result = await rulesEngine.execute(rules, {
             person: {
                 firstName: "John",
                 lastName: "Smith",
