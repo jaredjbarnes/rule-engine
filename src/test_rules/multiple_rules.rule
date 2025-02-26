@@ -24,7 +24,7 @@ RULE sale {
 RULE ben {
 
     WHEN
-        person.firstName == "John"
+        person.firstName == "John" + "Jared" + "Blah"
     THEN
         person.age = person.age + 10
 }

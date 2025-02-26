@@ -6,7 +6,9 @@ const { rules } = patterns`
     when-keyword = "WHEN"
     then-keyword = "THEN"
 
+    url = /https:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(:\d+)?(\/[^\s\]]*)?/
     string-literal = /"(?:\\.|[^"\\])*"/
+    null-literal = "null"
     line-spaces = /[^\S\r\n]+/
     spaces = /\s+/
     name = /[a-zA-Z_$][a-zA-Z_$0-9]*/
@@ -17,6 +19,17 @@ const { rules } = patterns`
     false-literal = "false"
     bool-literal = true-literal | false-literal
 
+    object-property-name = string-literal
+    value = literal | expression
+    object-property = object-property-name + spaces? + ":" + spaces? + value
+    object-properties = (object-property, /\s*,\s*/)+
+    object-literal = "{" + spaces? + object-properties? + spaces? +"}" 
+
+    array-items = (value, /\s*,\s*/)+
+    array-literal = "[" + spaces? + array-items? + spaces? + "]"
+
+    literal = object-literal | array-literal | string-literal | bool-literal | null-literal | number-literal
+
     not-expression = "!" + spaces? + expression
     plus-expression = "+" + spaces? + expression
     minus-expression = "-" + expression
@@ -26,10 +39,6 @@ const { rules } = patterns`
     comparison-operator = "<=" | "<" | ">=" | ">" | "==" | "!="
     comparison-expression = expression + spaces? + comparison-operator + spaces? + expression
 
-    # Augment Available namespaces there
-    @tokens([
-        ""
-    ])
     property = name
     dot-refinement = "." + property
     bracket-refinement = "[" +spaces? + expression + spaces? + "]"
@@ -41,8 +50,7 @@ const { rules } = patterns`
     args = (expression, argument-delimiter trim)+
     invocation = "(" + spaces? + args? + spaces? + ")"
 
-    service-name = name
-    service-invocation = service-name + invocation
+    service-invocation = "[" + spaces? + url + spaces? + "](" + spaces? + object-literal? + spaces? + ")" 
     assignment-expression = expression + spaces? + assignment-operator + spaces? + expression
 
     mul-div-mod-operator = "*" | "/" | "%"
@@ -60,8 +68,8 @@ const { rules } = patterns`
     logical-and-expression = logical-expression + spaces? + and-operator + spaces? + logical-expression
     logical-or-expression = logical-expression + spaces? + or-operator + spaces? + logical-expression
     logical-comparison-expression = logical-expression + spaces? + comparison-operator + spaces? + logical-expression
-    
-    expression = group-expression | not-expression | plus-expression | minus-expression | service-invocation | refinement-expression |  mul-div-mod-expression | add-sub-expression | and-expression | or-expression | comparison-expression | assignment-expression | variable-reference | string-literal | number-literal | bool-literal
+
+    expression = group-expression | not-expression | plus-expression | minus-expression | service-invocation | refinement-expression |  mul-div-mod-expression | add-sub-expression | and-expression | or-expression | comparison-expression | assignment-expression | variable-reference | literal
     logical-expression = logical-comparison-expression | logical-and-expression | logical-or-expression | expression
 
     action-name = name
